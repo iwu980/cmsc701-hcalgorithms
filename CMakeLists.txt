@@ -22,8 +22,5 @@ target_link_libraries(umapppExample libscran::umappp)
 
 
 find_package(HDF5 REQUIRED)
-add_executable(dummy src/dummy.cpp)
-target_link_libraries(dummy HDF5::HDF5)
-
 add_executable(readdata src/readdata.cpp)
 target_link_libraries(readdata HDF5::HDF5)
