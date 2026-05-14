@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.19)
 project(MyProject VERSION 1.0)
 
 # Specify the C++ standard
@@ -19,3 +19,11 @@ FetchContent_MakeAvailable(umappp)
 add_executable(umapppExample src/umappp_example.cpp)
 
 target_link_libraries(umapppExample libscran::umappp)
+
+
+find_package(HDF5 REQUIRED)
+add_executable(dummy src/dummy.cpp)
+target_link_libraries(dummy HDF5::HDF5)
+
+add_executable(readdata src/readdata.cpp)
+target_link_libraries(readdata HDF5::HDF5)

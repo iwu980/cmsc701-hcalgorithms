@@ -1,3 +1,9 @@
+# Data
+data/*.h5ad
+
+# Libraries
+hdf5/
+
 # Prerequisites
 *.d
 
