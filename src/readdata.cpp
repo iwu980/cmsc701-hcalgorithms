@@ -2,54 +2,56 @@
 #include <vector>
 #include <iostream>
 
+
 int main() {
-    // Open the H5AD file
+    // filepath is relative to the repository directory
     hid_t file = H5Fopen("data/c6ea3545-9200-4497-8591-08f687626182.h5ad", H5F_ACC_RDONLY, H5P_DEFAULT);
     if (file < 0) { std::cerr << "Error opening file\n"; return 1; }
-
-    // Open /X as a group, NOT a dataset
-    hid_t x_group = H5Gopen(file, "/X", H5P_DEFAULT);
-    if (x_group < 0) {
-        std::cerr << "Error: /X is missing or structured differently.\n";
+    
+    // Open the umap embedding: https://github.com/chanzuckerberg/single-cell-curation/blob/main/schema/7.0.0/schema.md#obsm-embeddings
+    hid_t dataset = H5Dopen(file, "/obsm/X_umap", H5P_DEFAULT);
+    if (dataset < 0) {
+        std::cerr << "Error: /obsm/X_umap not found. Check if UMAP was calculated." << std::endl;
         H5Fclose(file);
         return 1;
     }
 
-    // 1. Open and read the sparse non-zero array values
-    hid_t d_dataset = H5Dopen(x_group, "data", H5P_DEFAULT);
-    hid_t d_space = H5Dget_space(d_dataset);
-    hsize_t data_dims[1];
-    H5Sget_simple_extent_dims(d_space, data_dims, NULL);
-    
-    std::vector<float> values(data_dims[0]);
-    H5Dread(d_dataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, values.data());
+    // Query the dataspace geometry to get number of cells and embedding dimensions
+    hid_t space = H5Dget_space(dataset);
+    hsize_t dims[2]; 
+    int rank = H5Sget_simple_extent_dims(space, dims, NULL);
 
-    // 2. Open and read the column/row indices mapping
-    hid_t i_dataset = H5Dopen(x_group, "indices", H5P_DEFAULT);
-    hid_t i_space = H5Dget_space(i_dataset);
-    hsize_t index_dims[1];
-    H5Sget_simple_extent_dims(i_space, index_dims, NULL);
-    
-    std::vector<int32_t> indices(index_dims[0]); // Can also be int64_t based on file
-    H5Dread(i_dataset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, indices.data());
+    if (rank != 2) {
+        std::cerr << "Error: Expected a 2D matrix for UMAP, found rank " << rank << std::endl;
+        H5Sclose(space); H5Dclose(dataset); H5Fclose(file);
+        return 1;
+    }
 
-    // 3. Open and read index pointers (boundaries)
-    hid_t p_dataset = H5Dopen(x_group, "indptr", H5P_DEFAULT);
-    hid_t p_space = H5Dget_space(p_dataset);
-    hsize_t ptr_dims[1];
-    H5Sget_simple_extent_dims(p_space, ptr_dims, NULL);
-    
-    std::vector<int32_t> indptr(ptr_dims[0]);
-    H5Dread(p_dataset, H5T_NATIVE_INT32, H5S_ALL, H5S_ALL, H5P_DEFAULT, indptr.data());
+    size_t num_cells = dims[0];
+    size_t num_dims = dims[1]; // Almost always 2 (X and Y coordinates)
 
-    std::cout << "Successfully read sparse /X matrix metadata!" << std::endl;
-    std::cout << "Non-zero values count: " << values.size() << std::endl;
+    std::cout << "Loading UMAP dataset..." << std::endl;
+    std::cout << "Cells: " << num_cells << " | Dimensions: " << num_dims << std::endl;
 
-    // Cleanup resources
-    H5Sclose(d_space); H5Dclose(d_dataset);
-    H5Sclose(i_space); H5Dclose(i_dataset);
-    H5Sclose(p_space); H5Dclose(p_dataset);
-    H5Gclose(x_group);
+    // Read raw data into contiguous float vector buffer 
+    std::vector<float> umap_coords(num_cells * num_dims);
+    herr_t status = H5Dread(dataset, H5T_NATIVE_FLOAT, H5S_ALL, H5S_ALL, H5P_DEFAULT, umap_coords.data());
+    if (status < 0) {
+        std::cerr << "Error reading UMAP numerical blocks." << std::endl;
+    } else {
+        std::cout << "Successfully loaded UMAP coordinates!" << std::endl;
+        
+        // Print out the coordinates of the first 3 cells as verification
+        for (size_t i = 0; i < std::min(num_cells, size_t(3)); ++i) {
+            float x = umap_coords[i * num_dims + 0];
+            float y = umap_coords[i * num_dims + 1];
+            std::cout << "Cell " << i << " -> UMAP_1: " << x << ", UMAP_2: " << y << std::endl;
+        }
+    }
+
+
+    H5Sclose(space);
+    H5Dclose(dataset);
     H5Fclose(file);
     return 0;
 }

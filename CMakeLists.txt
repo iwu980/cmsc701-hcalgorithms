@@ -22,5 +22,9 @@ target_link_libraries(umapppExample libscran::umappp)
 
 
 find_package(HDF5 REQUIRED)
+find_package(Python COMPONENTS Development NumPy REQUIRED)
 add_executable(readdata src/readdata.cpp)
+target_compile_features(readdata PRIVATE cxx_std_11)
+target_include_directories(readdata PRIVATE ${Python_INCLUDE_DIRS} ${Python_NumPy_INCLUDE_DIRS})
 target_link_libraries(readdata HDF5::HDF5)
+target_link_libraries(readdata Python::Python Python::NumPy)
