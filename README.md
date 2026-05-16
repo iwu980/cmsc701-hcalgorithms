@@ -13,7 +13,14 @@ Theoretically this is all you have to do. I did not install HighFive.
 See data/DOWNLOAD
 
 ## To build
-TODO
+mkdir build
+
+initially:
+cd build ; cmake ../
+
+every build after, from repo directory:
+cmake --build build
+
 
 ## To run
-TODO
+./build/readdata
