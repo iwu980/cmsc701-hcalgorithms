@@ -5,7 +5,6 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#include "utilities.h"
 
 class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
@@ -38,6 +37,7 @@ class LSTree {
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
             int node_num = 2 * num_leaves - 2;
+            // Assign partitions H_i
             while((node_num*2+1) > (2*num_leaves-2)) {
                 nodes_by_height[0].insert(node_num);
                 node_num--;
@@ -49,6 +49,7 @@ class LSTree {
                 }
             }
             print_nodes_by_height();
+            // initialize leaves
             for(int i = 0; i < leaves.size(); i++) {
                 nodes[num_leaves*2-i-2] = leaves[i];
             }
@@ -67,33 +68,6 @@ class LSTree {
             }
         }
     private: 
-        /*void build_w() {
-            w.resize(num_leaves*2+1);
-            // calculate euclidean distance for every input in H_0 x H_0
-            float sigma = 0;
-            for(int i = 0; i < nodes_by_height[0].size(); i++) {
-                for(int j = i; j < nodes_by_height[0].size(); j++) {
-                    auto dist =  distance(i, j); // TODO: this should be replace with a call to euclidian_distance for vectors
-                    w[i][j] = dist;
-                    w[j][i] = dist;
-                    sigma += dist;
-                }
-            }
-            // update the same set in place to similarity function `w` gaussian kernel
-            sigma = sigma / std::pow(nodes_by_height[0].size(), 2); // sigma = average distance in the dataset
-            for(int i = 0; i < nodes_by_height[0].size(); i++) {
-                for(int j = i; j < nodes_by_height[0].size(); j++) {
-                    auto similarity =  std::exp(-1 * std::pow(w[i][j], 2) / (2 * std::pow(sigma, 2))); // gaussian kernel
-                    w[i][j] = similarity;
-                    w[j][i] = similarity;
-                }
-            }
-
-            for(int i = 0; i < nodes_by_height.size(); i++) {
-                for(int j = 0; j < nodes_by_height[i].size(); j++) {
-                    for(int k = 0; k < i; k++) {
-                        for(int m = 0; m < nodes_by_height[k].size(); m++) {
-                            w[j][m] = w[2*j+1][2*m+1] + w[2*j+1][2*m+2] + w[2*j+2][2*m+1] + w[2*j+2][2*m+2];*/
         void print_w() {
             std::cout << "w: " << std::endl;
             for(int i = 0; i < w.size(); i++) {
@@ -102,12 +76,6 @@ class LSTree {
                 }
             }
         }
-        /*void print_node_vals() {
-            for (const std::pair<const int, int>& n : nodes) {
-                std::cout << "Node " << n.first << ": " << n.second << std::endl;
-            }
-        }*/
-       //TODO: make compatible with pair not ints
     private: 
         void build_w() {
             std::cout << "starting build" << std::endl;
@@ -122,8 +90,8 @@ class LSTree {
                             int node1 = (*iter_i);
                             int node2 = (*iter_k);
                             if(i == 0 && k == 0) {
-                                w[node1][node2] = distance(node1, node2);
-                                w[node1][node2] = distance(node1, node2);
+                                w[node1][node2] = gaussian_kernel(node1, node2);
+                                w[node1][node2] = gaussian_kernel(node1, node2);
                             }
                             else {
                                 std::vector<int> first;
@@ -167,7 +135,11 @@ class LSTree {
                 }
             }
         }
-        int distance(int a, int b) {
+        float euclidian_distance(int a, int b) {
             return std::pow(std::pow(nodes[b].first - nodes[a].first, 2) + std::pow(nodes[b].second - nodes[a].second, 2), 0.5);
+        }
+        float gaussian_kernel(int a, int b) {
+            float sigma = 1;
+            return std::exp(-1 * std::pow(euclidian_distance(a, b), 2) / (2 * std::pow(sigma, 2)));
         }
 };
