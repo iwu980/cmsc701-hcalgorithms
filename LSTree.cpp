@@ -10,8 +10,8 @@
 class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
     //begins with a binary tree where the children of node n are assumed to be the node given by 2n+1 and 2n+2.
-    std::unordered_map<int, std::string> nodes;
-    std::vector<std::vector<int>> nodes_by_height;
+    std::unordered_map<int, std::pair<float, float>> nodes;
+    std::vector<std::unordered_set<int>> nodes_by_height;
     std::vector<std::vector<float>> dist; // euclidean distance
     std::vector<std::vector<float>> w; // similarity function
     int num_leaves;
@@ -34,7 +34,7 @@ class LSTree {
             }
             //print_nodes_by_height();
         }
-        LSTree(int l, std::vector<int> leaves) {
+        LSTree(int l, std::vector<std::pair<float, float>> leaves) {
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
@@ -53,7 +53,7 @@ class LSTree {
             for(int i = 0; i < leaves.size(); i++) {
                 nodes[num_leaves*2-i-2] = leaves[i];
             }
-            print_node_vals();
+            //print_node_vals();
             build_w();
             print_w();
             std::cout << "Printing finished" << std::endl;
@@ -103,11 +103,12 @@ class LSTree {
                 }
             }
         }
-        void print_node_vals() {
+        /*void print_node_vals() {
             for (const std::pair<const int, int>& n : nodes) {
                 std::cout << "Node " << n.first << ": " << n.second << std::endl;
             }
-        }
+        }*/
+       //TODO: make compatible with pair not ints
     private: 
         void build_w() {
             std::cout << "starting build" << std::endl;
@@ -168,6 +169,6 @@ class LSTree {
             }
         }
         int distance(int a, int b) {
-            return std::pow(nodes[b] - nodes[a], 2);
+            return std::pow(std::pow(nodes[b].first - nodes[a].first, 2) + std::pow(nodes[b].second - nodes[a].second, 2), 0.5);
         }
 };
