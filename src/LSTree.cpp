@@ -12,7 +12,6 @@ class LSTree {
     //begins with a binary tree where the children of node n are assumed to be the node given by 2n+1 and 2n+2.
     std::unordered_map<int, std::pair<float, float>> nodes;
     std::vector<std::unordered_set<int>> nodes_by_height;
-    std::vector<std::vector<float>> dist; // euclidean distance
     std::vector<std::vector<float>> w; // similarity function
     int num_leaves;
     public: 
@@ -34,7 +33,7 @@ class LSTree {
             }
             //print_nodes_by_height();
         }
-        LSTree(int l, std::vector<std::pair<float, float>> leaves) {
+        LSTree(int l, std::vector<std::pair<float, float>> &leaves) {
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
