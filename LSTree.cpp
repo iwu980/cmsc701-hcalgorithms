@@ -1,6 +1,6 @@
 #include <unordered_map>
+#include <unordered_set>
 #include <iostream>
-#include <tuple>
 #include <string>
 #include <vector>
 #include <cmath>
@@ -8,7 +8,7 @@
 #include "utilities.h"
 
 class LSTree {
-    std::unordered_map<int, std::tuple<int, int>> tree_struct;
+    std::unordered_map<int, std::pair<int, int>> tree_struct;
     //begins with a binary tree where the children of node n are assumed to be the node given by 2n+1 and 2n+2.
     std::unordered_map<int, std::string> nodes;
     std::vector<std::vector<int>> nodes_by_height;
@@ -21,43 +21,54 @@ class LSTree {
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
-            for(int i = 0; i < height; i++) {
-                nodes_by_height[i].resize(fmin(std::pow(2, height-i-1), num_leaves));
-                for(int j = 0; j < nodes_by_height[i].size(); j++) {
-                    nodes_by_height[i][j] = std::pow(2, height-i-1) + j - 1;
+            int node_num = 2 * num_leaves - 2;
+            while((node_num*2+1) > (2*num_leaves-2)) {
+                nodes_by_height[0].insert(node_num);
+                node_num--;
+            }
+            for(int i = 1; i < height; i++) {
+                while((node_num >= 0) && (nodes_by_height[i-1].count(node_num*2+1) > 0)) {
+                    nodes_by_height[i].insert(node_num);
+                    node_num--;
                 }
             }
-            std::cout << "LSTree" << std::endl;
-            print_nodes_by_height();
+            //print_nodes_by_height();
         }
-        LSTree(int l, std::vector<std::string> leaves) {
+        LSTree(int l, std::vector<int> leaves) {
             num_leaves = l;
-            int height = std::ceil(std::log2(num_leaves*2+2));
+            int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
-            for(int i = 0; i < height; i++) {
-                nodes_by_height[i].resize(std::pow(2, height-i-1)-1);
-                for(int j = 0; j < std::pow(2, i); j++) {
-                    nodes_by_height[i][j] = std::pow(2, height-i-1) + j;
+            int node_num = 2 * num_leaves - 2;
+            while((node_num*2+1) > (2*num_leaves-2)) {
+                nodes_by_height[0].insert(node_num);
+                node_num--;
+            }
+            for(int i = 1; i < height; i++) {
+                while((node_num >= 0) && (nodes_by_height[i-1].count(node_num*2+1) > 0)) {
+                    nodes_by_height[i].insert(node_num);
+                    node_num--;
                 }
             }
-            std::cout << "LSTree" << std::endl;
             print_nodes_by_height();
             for(int i = 0; i < leaves.size(); i++) {
-                nodes[2*nodes.size()+1] = leaves[i];
+                nodes[num_leaves*2-i-2] = leaves[i];
             }
-            //build_w();
+            print_node_vals();
+            build_w();
+            print_w();
+            std::cout << "Printing finished" << std::endl;
         }
         void print_nodes_by_height() {
             for(int i = 0; i < nodes_by_height.size(); i++) {
                 std::cout << "Height: " << i << " has " << nodes_by_height[i].size() << " nodes" << std::endl;
-                for(int j = 0; j < nodes_by_height[i].size(); j++) {
-                    std::cout << nodes_by_height[i][j] << " ";
+                for(auto iter = nodes_by_height[i].begin(); iter != nodes_by_height[i].end(); ++iter) {
+                    std::cout << (*iter) << " ";
                 }
                 std::cout << std::endl;
             }
         }
     private: 
-        void build_w() {
+        /*void build_w() {
             w.resize(num_leaves*2+1);
             // calculate euclidean distance for every input in H_0 x H_0
             float sigma = 0;
@@ -83,13 +94,80 @@ class LSTree {
                 for(int j = 0; j < nodes_by_height[i].size(); j++) {
                     for(int k = 0; k < i; k++) {
                         for(int m = 0; m < nodes_by_height[k].size(); m++) {
-                            w[j][m] = w[2*j+1][2*m+1] + w[2*j+1][2*m+2] + w[2*j+2][2*m+1] + w[2*j+2][2*m+2];
+                            w[j][m] = w[2*j+1][2*m+1] + w[2*j+1][2*m+2] + w[2*j+2][2*m+1] + w[2*j+2][2*m+2];*/
+        void print_w() {
+            std::cout << "w: " << std::endl;
+            for(int i = 0; i < w.size(); i++) {
+                for(int j = 0; j < w[i].size(); j++) {
+                    std::cout << "w[" << i << "][" << j << "]: " << w[i][j] << std::endl;
+                }
+            }
+        }
+        void print_node_vals() {
+            for (const std::pair<const int, int>& n : nodes) {
+                std::cout << "Node " << n.first << ": " << n.second << std::endl;
+            }
+        }
+    private: 
+        void build_w() {
+            std::cout << "starting build" << std::endl;
+            w.resize(num_leaves*2-1);
+            for(int i = 0; i < w.size(); i++) {
+                w[i].resize(num_leaves*2-1);
+            }
+            for(int i = 0; i < nodes_by_height.size(); i++) { //height
+                for(auto iter_i = nodes_by_height[i].begin(); iter_i != nodes_by_height[i].end(); ++iter_i) { //all nodes of height i
+                    for(int k = 0; k <= i; k++) { //height of second node
+                        for(auto iter_k = nodes_by_height[k].begin(); iter_k != nodes_by_height[k].end(); ++iter_k) { //all nodes of height k
+                            int node1 = (*iter_i);
+                            int node2 = (*iter_k);
+                            if(i == 0 && k == 0) {
+                                w[node1][node2] = distance(node1, node2);
+                                w[node1][node2] = distance(node1, node2);
+                            }
+                            else {
+                                std::vector<int> first;
+                                std::vector<int> second;
+                                if(i == 0) {
+                                    first.resize(1);
+                                    first[0] = node1;
+                                }
+                                else if((node1*2+2) > (2*num_leaves-1)) {
+                                    first.resize(1);
+                                    first[0] = node1*2+1;
+                                }
+                                else {
+                                    first.resize(2);
+                                    first[0] = node1*2+1;
+                                    first[0] = node1*2+2;
+                                }
+                                if(k == 0) {
+                                    second.resize(1);
+                                    second[0] = node2;
+                                }
+                                else if((node2*2+2) > (2*num_leaves-1)) {
+                                    second.resize(1);
+                                    second[0] = node2*2+1;
+                                }
+                                else {
+                                    second.resize(2);
+                                    second[0] = node2*2+1;
+                                    second[1] = node2*2+2;
+                                }
+                                w[node1][node2] = 0;
+                                for(int f = 0; f < first.size(); f++) {
+                                    for(int s = 0; s < second.size(); s++) {
+                                        w[node1][node2] += w[f][s];
+                                    }
+                                }
+                                w[node2][node1] = w[node1][node2];
+                            }
                         }
                     }
                 }
             }
         }
         int distance(int a, int b) {
-            return std::pow(nodes[b].length() - nodes[a].length(), 2);
+            return std::pow(nodes[b] - nodes[a], 2);
         }
 };
