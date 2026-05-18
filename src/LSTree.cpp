@@ -1,10 +1,13 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <iostream>
+#include <fstream>
 #include <string>
 #include <vector>
 #include <cmath>
 #include <algorithm>
+#define PRINT_PROGRESS 10
+#define PRECISION 0
 
 class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
@@ -13,8 +16,9 @@ class LSTree {
     std::vector<std::unordered_set<int>> nodes_by_height;
     std::vector<std::vector<float>> w; // similarity function
     std::vector<int> parents, heights, subtree_leaves;
-    float revenue;
+    float revenue, scale_factor;
     int num_leaves, total_nodes, convergence_time;
+    std::ofstream profits;
     public: 
         LSTree() {}
         LSTree(int l) {
@@ -91,7 +95,6 @@ class LSTree {
             parents.resize(node_num);
             heights.resize(node_num);
             total_nodes = node_num;
-            print_nodes_by_height();
             nodes.resize(total_nodes);
             // initialize leaves
             int leaf = 0;
@@ -101,7 +104,11 @@ class LSTree {
             }
             build_w();
             calc_revenue();
+            profits.open("profits.csv");
+            //std::cout << "Scale factor: " << scale_factor << std::endl;
             optimize();
+            //print_w();
+            //std::cout << "Scale factor: " << scale_factor << std::endl;
         }
         void print_nodes_by_height() {
             for(int i = 0; i < nodes_by_height.size(); i++) {
@@ -113,12 +120,7 @@ class LSTree {
             }
         }
         void print_w() {
-            std::cout << "w: " << std::endl;
-            for(int i = 0; i < w.size(); i++) {
-                for(int j = 0; j < w[i].size(); j++) {
-                    std::cout << "w[" << i << "][" << j << "]: " << w[i][j] << std::endl;
-                }
-            }
+            print_w(w.size());
         }
         void print_tree_struct() {
             std::cout << "Tree struct: " << std::endl;
@@ -135,21 +137,34 @@ class LSTree {
         int get_convergence_iterations() {
             return convergence_time;
         }
+        float get_revenue() {
+            return revenue;
+        }
     private: 
+        void print_w(int n) {
+            std::cout << "w up to n: " << std::endl;
+            for(int i = 0; i < n; i++) {
+                for(int j = 0; j < n; j++) {
+                    std::cout << "w[" << i << "][" << j << "]: " << w[i][j] << std::endl;
+                }
+            }
+        }
         void calc_revenue() {
+            revenue = 0;
             int ancestor = num_leaves;
             for(int i = 1; i < nodes_by_height.size(); i++) {
                 int seen_leaves = 0;
                 while(nodes_by_height[i].count(ancestor) > 0) {
                     for(int r = seen_leaves + subtree_leaves[tree_struct[ancestor].first]; r < seen_leaves + subtree_leaves[ancestor]; r++) {
                         for(int l = seen_leaves; l < seen_leaves + subtree_leaves[tree_struct[ancestor].first]; l++) {
-                            revenue += subtree_leaves[ancestor] * w[l][r];
+                            revenue += ((num_leaves-subtree_leaves[ancestor]) * w[l][r])/scale_factor;
                         }
                     }
                     seen_leaves += subtree_leaves[ancestor];
                     ancestor++;
                 }
             }
+            //std::cout << "Initial rev: " << (revenue/scale_factor) << std::endl;
         }
         int get_subtree_leaves(int node) {
             if(node == -1) {
@@ -162,10 +177,13 @@ class LSTree {
             //iterate through greedy search until it stops returning a good revenue
             std::tuple<int, int, int, float> search = greedy_search();
             //pair c, prev
-            std::pair<int, int> prev_swap = {0, 0};
+            //std::pair<int, int> prev_swap = {0, 0};
             while((std::get<3>(search) > 0)) {
                 convergence_time++;
                 revenue += std::get<3>(search);
+                if((convergence_time % PRINT_PROGRESS) == 0) {
+                    std::cout << "Iteration " << convergence_time << " complete; increased revenue by " << std::get<3>(search) << " for a total of " << (revenue) << std::endl; 
+                }
                 int y = std::get<0>(search);
                 int x = tree_struct[y].first;
                 int c = tree_struct[y].second;
@@ -178,26 +196,23 @@ class LSTree {
                 if(t == 1) {
                     prev = tree_struct[x].second;
                 }
-                if((prev == prev_swap.first) && (c == prev_swap.second)) {
-                    search = {0, 0, 0, 0};
-                }
-                else {
-                    update_w(x, c, prev);
-                    update_struct(std::get<0>(search), x, c, std::get<2>(search));
-                    //updates heights and number of subtree leaves propagating upward
-                    update_upwards(x);
-                    search = greedy_search();
-                }
+                update_w(x, c, prev);
+                update_struct(std::get<0>(search), x, c, std::get<2>(search));
+                //print_tree_struct();
+                //std::cout << "Subtree leaves: ";
+                //print_arr(subtree_leaves);
+                //updates heights and number of subtree leaves propagating upward
+                update_upwards(x);
+                search = greedy_search();
             }
+            profits << "0";
         }
         void update_w(int x, int c, int prev) {
             //t = 1 -> t'; t = 2 -> t''
             for(int i = 0; i < total_nodes; i++) {
-                if(i != x) {
-                    //typo in jowhari
-                    w[x][i] += w[c][i] - w[prev][i];
-                    w[i][x] = w[x][i];
-                }
+                //typo in jowhari
+                w[x][i] += (w[c][i] - w[prev][i]);
+                w[i][x] = w[x][i];
             }
         }
         void update_upwards(int node) {
@@ -250,9 +265,8 @@ class LSTree {
         }
         std::tuple<int, int, int, float> greedy_search() {
             //look for the optimal interchange
-            //edge records node number of y, whether x is y's first or second, 1 for T' and 2 for T'' as optimal interchange
-            std::tuple<int, int, int> edge = {-1, -1, -1};
-            float rev_inc = 0;
+            //edge records node number of y, whether x is y's first or second, 1 for T' and 2 for T'' as optimal interchange, and the max revenue increase
+            std::tuple<int, int, int, float> output = {-1, -1, -1, 0};
             for(int i = 2; i < nodes_by_height.size(); i++) {
                 for(auto iter = nodes_by_height[i].begin(); iter != nodes_by_height[i].end(); ++iter) {
                     int y = *iter;
@@ -262,15 +276,15 @@ class LSTree {
                         if((c != -1) && (tree_struct[x].second != -1)) {
                             int a = tree_struct[x].first;
                             int b = tree_struct[x].second;
-                            float t2 = subtree_leaves[a] * w[b][c] - subtree_leaves[c] * w[a][b];
-                            float t1 = subtree_leaves[b] * w[a][c] - subtree_leaves[c] * w[a][b];
-                            if(t1 > rev_inc) {
-                                edge = {y, k, 1};
-                                rev_inc = t1;
+                            float t2 = ((subtree_leaves[a] * w[b][c]) - (subtree_leaves[c] * w[a][b]))/scale_factor;
+                            //std::cout << "switching " << c << " and " << a << " where y = " << y << " and x = " << x << " results in " << subtree_leaves[a] << "*" << (w[b][c]/scale_factor) << " - " << subtree_leaves[c] << "*" << (w[a][b]/scale_factor) << " = " << t2 << std::endl;
+                            float t1 = ((subtree_leaves[b] * w[a][c]) - (subtree_leaves[c] * w[a][b]))/scale_factor;
+                            //std::cout << "switching " << c << " and " << b << " results in " << subtree_leaves[b] << "*" << w[a][c]/scale_factor << " - " << subtree_leaves[c] << "*" << w[a][b]/scale_factor << " = " << t1 << std::endl;
+                            if(t1 > std::get<3>(output)) {
+                                output = {y, k, 1, t1};
                             }
-                            if(t2 > rev_inc) {
-                                edge = {y, k, 2};
-                                rev_inc = t2;
+                            if(t2 > std::get<3>(output)) {
+                                output = {y, k, 2, t2};
                             }
                         }
                         x = c;
@@ -278,9 +292,10 @@ class LSTree {
                     }
                 }
             }
-            return {std::get<0>(edge), std::get<1>(edge), std::get<2>(edge), rev_inc};
+            return output;
         }
         void build_w() {
+            scale_factor = 0;
             w.resize(total_nodes);
             for(int i = 0; i < w.size(); i++) {
                 w[i].resize(total_nodes);
@@ -294,6 +309,9 @@ class LSTree {
                             if(i == 0 && k == 0) {
                                 w[node1][node2] = gaussian_kernel(node1, node2);
                                 w[node2][node1] = w[node1][node2];
+                                if(node1 < node2) {
+                                    scale_factor += w[node1][node2];
+                                }
                             }
                             else {
                                 std::pair<int, int> first;
@@ -325,6 +343,7 @@ class LSTree {
                     }
                 }
             }
+            scale_factor *= (num_leaves-2);
         }
         float euclidian_distance(int a, int b) {
             return std::pow(std::pow(nodes[b].first - nodes[a].first, 2) + std::pow(nodes[b].second - nodes[a].second, 2), 0.5);
