@@ -10,9 +10,9 @@ https://cellxgene.cziscience.com/collections/065ad318-59fd-4f8c-b4b1-66caa766540
 https://datasets.cellxgene.cziscience.com/e9078993-a985-4159-b770-a0baf954d7f6.h5ad
 - cells=6,362
 
-https://cellxgene.cziscience.com/collections/f4774e03-b5a7-473b-99d6-eeb80592c5db
-https://datasets.cellxgene.cziscience.com/aa1346f6-42e7-4d39-adc8-0cf5394fce86.h5ad > Visium Spatial of Human muscle in Healthy control_3
-- cells = 4,992
+https://cellxgene.cziscience.com/collections/60a2676d-9f37-46cc-9b02-c7370a53be9c > other cell types
+https://datasets.cellxgene.cziscience.com/982c7fb5-a191-4125-8ff5-edea84790468.h5ad
+- cells 9,354
 
 https://cellxgene.cziscience.com/collections/8a05eaf6-5680-41f2-9be7-eddc383b178a > SMBO-114
 https://datasets.cellxgene.cziscience.com/3b2878a8-4798-4ae0-b284-e77ed7c1b6a5.h5ad
