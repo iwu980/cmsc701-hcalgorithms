@@ -6,8 +6,9 @@
 #include <vector>
 #include <cmath>
 #include <algorithm>
-#define PRINT_PROGRESS 10
+#define PRINT_PROGRESS 50
 #define PRECISION 0
+#define MAX_ITER 10000
 
 class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
@@ -18,7 +19,7 @@ class LSTree {
     std::vector<int> parents, heights, subtree_leaves;
     float revenue, scale_factor;
     int num_leaves, total_nodes, convergence_time;
-    std::ofstream profits;
+    //std::ofstream profits;
     public: 
         LSTree() {}
         LSTree(int l) {
@@ -104,7 +105,7 @@ class LSTree {
             }
             build_w();
             calc_revenue();
-            profits.open("profits.csv");
+            //profits.open("profits.csv");
             //std::cout << "Scale factor: " << scale_factor << std::endl;
             optimize();
             //print_w();
@@ -140,7 +141,6 @@ class LSTree {
         float get_revenue() {
             return revenue;
         }
-    private: 
         void print_w(int n) {
             std::cout << "w up to n: " << std::endl;
             for(int i = 0; i < n; i++) {
@@ -149,22 +149,64 @@ class LSTree {
                 }
             }
         }
+    private: 
         void calc_revenue() {
             revenue = 0;
-            int ancestor = num_leaves;
-            for(int i = 1; i < nodes_by_height.size(); i++) {
-                int seen_leaves = 0;
-                while(nodes_by_height[i].count(ancestor) > 0) {
-                    for(int r = seen_leaves + subtree_leaves[tree_struct[ancestor].first]; r < seen_leaves + subtree_leaves[ancestor]; r++) {
-                        for(int l = seen_leaves; l < seen_leaves + subtree_leaves[tree_struct[ancestor].first]; l++) {
-                            revenue += ((num_leaves-subtree_leaves[ancestor]) * w[l][r])/scale_factor;
-                        }
+            std::unordered_map<int, std::unordered_set<int>> clusters;
+            for(auto iter = nodes_by_height[1].begin(); iter != nodes_by_height[1].end(); ++iter) {
+                clusters[*iter].insert(tree_struct[*iter].first);
+                if(subtree_leaves[*iter] > 1) {
+                    clusters[*iter].insert(tree_struct[*iter].second);
+                    //std::cout << "For nodes " << tree_struct[*iter].first << " and " << tree_struct[*iter].second << " added (" << (num_leaves - 2) << " * " << w[tree_struct[*iter].first][tree_struct[*iter].second] << ")/" << scale_factor << " to " << revenue << " = ";
+                    revenue += ((num_leaves - 2) * w[tree_struct[*iter].first][tree_struct[*iter].second])/scale_factor;
+                    //std::cout << revenue << std::endl;
+                }
+                //std::cout << "Added cluster at " << *iter << std::endl;
+            }
+            while(clusters.count(total_nodes-1) == 0) {
+                auto clust_it = clusters.begin();
+                int parent = parents[clust_it->first];
+                std::pair<int, int> children = tree_struct[parent];
+                int sibling = children.second;
+                if(clust_it->first != children.first) {
+                    sibling = children.first;
+                }
+                while((sibling > num_leaves) && (clusters.count(sibling) == 0)) {
+                    ++clust_it;
+                    parent = parents[clust_it->first];
+                    std::pair<int, int> children = tree_struct[parent];
+                    sibling = children.second;
+                    if(clust_it->first != children.first) {
+                        sibling = children.first;
                     }
-                    seen_leaves += subtree_leaves[ancestor];
-                    ancestor++;
+                }
+                std::pair<int, std::unordered_set<int>>clust = *(clust_it);
+                if(sibling != -1) {
+                    std::unordered_set<int> sib_list = {sibling};
+                    if(clusters.count(sibling) > 0) {
+                        sib_list = clusters[sibling];
+                    }
+                    int leaves = clust.second.size() + clusters[sibling].size();
+                    for(auto iter1 = clust.second.begin(); iter1 != clust.second.end(); ++iter1) {
+                        for(auto iter2 = sib_list.begin(); iter2 != sib_list.end(); ++iter2) {
+                            //std::cout << "For nodes " << *iter1 << " and " << *iter2 << " added (" << (num_leaves - leaves) << " * " << w[*iter1][*iter2] << ")/" << scale_factor << " to " << revenue << " = ";
+                            revenue += ((num_leaves - leaves) * w[*iter1][*iter2])/scale_factor;
+                            //std::cout << revenue << std::endl;
+                            clusters[parent].insert(*iter2);
+                        }
+                        clusters[parent].insert(*iter1);
+                    }
+                    clusters.erase(clust.first);
+                    clusters.erase(sibling);
+                    //std::cout << "Merged " << clust.first << " and " << sibling << " into " << parent << std::endl;
+                }
+                else {
+                    clusters[parent] = std::unordered_set<int>(clust.second);
+                    clusters.erase(clust.first);
+                    //std::cout << "Bumped " << clust.first << " to " << parent << std::endl;
                 }
             }
-            //std::cout << "Initial rev: " << (revenue/scale_factor) << std::endl;
+            std::cout << "rev: " << (revenue) << std::endl;
         }
         int get_subtree_leaves(int node) {
             if(node == -1) {
@@ -176,14 +218,10 @@ class LSTree {
             convergence_time = 0;
             //iterate through greedy search until it stops returning a good revenue
             std::tuple<int, int, int, float> search = greedy_search();
-            //pair c, prev
-            //std::pair<int, int> prev_swap = {0, 0};
-            while((std::get<3>(search) > 0)) {
+            std::pair<int, int> prev_swap = {0, 0};
+            bool halt = false;
+            while((std::get<3>(search) > 0) && (convergence_time < MAX_ITER) && (!halt)) {
                 convergence_time++;
-                revenue += std::get<3>(search);
-                if((convergence_time % PRINT_PROGRESS) == 0) {
-                    std::cout << "Iteration " << convergence_time << " complete; increased revenue by " << std::get<3>(search) << " for a total of " << (revenue) << std::endl; 
-                }
                 int y = std::get<0>(search);
                 int x = tree_struct[y].first;
                 int c = tree_struct[y].second;
@@ -196,16 +234,36 @@ class LSTree {
                 if(t == 1) {
                     prev = tree_struct[x].second;
                 }
-                update_w(x, c, prev);
-                update_struct(std::get<0>(search), x, c, std::get<2>(search));
-                //print_tree_struct();
-                //std::cout << "Subtree leaves: ";
-                //print_arr(subtree_leaves);
-                //updates heights and number of subtree leaves propagating upward
-                update_upwards(x);
-                search = greedy_search();
+                if((prev_swap != std::make_pair(x, c)) && (prev_swap != std::make_pair(c, x))) {
+                    if((convergence_time % PRINT_PROGRESS) == 0) {
+                        // << "Iteration " << convergence_time << " complete; increased revenue by " << std::get<3>(search) << " by swapping nodes " << c << " and " << prev << std::endl;
+                        //print_tree_struct();
+                    }
+                    if((convergence_time % (MAX_ITER/10)) == 0) {
+                        float prev_rev = revenue;
+                        std::cout << "iteration " << convergence_time << " ";
+                        calc_revenue();
+                        if(revenue == prev_rev) {
+                            halt = true;
+                        }
+                    }
+                    update_w(x, c, prev);
+                    update_struct(std::get<0>(search), x, c, std::get<2>(search));
+                    //print_tree_struct();
+                    //std::cout << "Subtree leaves: ";
+                    //print_arr(subtree_leaves);
+                    //updates heights and number of subtree leaves propagating upward
+                    update_upwards(x);
+                    search = greedy_search();
+                }
+                else {
+                    halt = true;
+                }
             }
-            profits << "0";
+            //profits << "0";
+            std::cout << "rev: " << revenue << std::endl;
+            std::cout << "iterations: " << convergence_time << std::endl;
+            std::cout << "halted: " << halt << std::endl;
         }
         void update_w(int x, int c, int prev) {
             //t = 1 -> t'; t = 2 -> t''
@@ -276,9 +334,9 @@ class LSTree {
                         if((c != -1) && (tree_struct[x].second != -1)) {
                             int a = tree_struct[x].first;
                             int b = tree_struct[x].second;
-                            float t2 = ((subtree_leaves[a] * w[b][c]) - (subtree_leaves[c] * w[a][b]))/scale_factor;
+                            float t2 = ((subtree_leaves[a] * w[b][c]) - (subtree_leaves[c] * w[a][b]));
                             //std::cout << "switching " << c << " and " << a << " where y = " << y << " and x = " << x << " results in " << subtree_leaves[a] << "*" << (w[b][c]/scale_factor) << " - " << subtree_leaves[c] << "*" << (w[a][b]/scale_factor) << " = " << t2 << std::endl;
-                            float t1 = ((subtree_leaves[b] * w[a][c]) - (subtree_leaves[c] * w[a][b]))/scale_factor;
+                            float t1 = ((subtree_leaves[b] * w[a][c]) - (subtree_leaves[c] * w[a][b]));
                             //std::cout << "switching " << c << " and " << b << " results in " << subtree_leaves[b] << "*" << w[a][c]/scale_factor << " - " << subtree_leaves[c] << "*" << w[a][b]/scale_factor << " = " << t1 << std::endl;
                             if(t1 > std::get<3>(output)) {
                                 output = {y, k, 1, t1};
