@@ -4,8 +4,9 @@ data/*.h5ad
 # Figures
 *.png
 
-# Cpp
+# build
 build/
+__pycache__
 
 # Libraries
 hdf5/

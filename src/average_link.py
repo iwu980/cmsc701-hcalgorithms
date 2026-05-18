@@ -92,18 +92,14 @@ def calculate_metric(df, gamma, root, nodes, metric):
     divisor = 0.0 # Jowhari's divisor from p 10: the calculated revenue is divided by (n − 2) ∑  i<j w(i, j)
     cache = {} # cache results of find_path
     for i in range(n):
-        if i % 100 == 0:
-            print("Calculate metric...", i)
+        # if i % 100 == 0: print("Calculate metric...", i)
         for j in range(i + 1, n):
             n_leaves = lca(root, nodes[i], nodes[j], cache).n_leaves
             result += W[i, j] * metric(n, n_leaves)
             divisor+= W[i, j]
     return result / (n-2) / divisor
 
-if __name__ == "__main__":
-    datapath = "data/c6ea3545-9200-4497-8591-08f687626182.h5ad"
-    if len(sys.argv) > 1:
-        datapath = sys.argv[1]
+def average_link(datapath):
     adata = anndata.read_h5ad(datapath)
 
     print("Loading dataframe ...")
@@ -132,3 +128,10 @@ if __name__ == "__main__":
     gamma = 1
     revenue = calculate_metric(df, gamma, root, nodes, metric=lambda n, n_leaves: n - n_leaves)
     print(f"Gamma: {gamma:.1f}, Revenue_Moseley_Wang: {revenue:.2f}")
+    return revenue
+
+if __name__ == "__main__":
+    datapath = "data/c6ea3545-9200-4497-8591-08f687626182.h5ad"
+    if len(sys.argv) > 1:
+        datapath = sys.argv[1]
+    average_link(datapath)
