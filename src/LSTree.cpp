@@ -10,10 +10,10 @@ class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
     //begins with a binary tree where the children of node n are assumed to be the node given by 2n+1 and 2n+2.
     std::vector<std::pair<float, float>> nodes;
-    std::unordered_map<int, int> subtree_leaves;
     std::vector<std::unordered_set<int>> nodes_by_height;
     std::vector<std::vector<float>> w; // similarity function
-    std::vector<int> parents, heights;
+    std::vector<int> parents, heights, subtree_leaves;
+    float revenue;
     int num_leaves, total_nodes, convergence_time;
     public: 
         LSTree() {}
@@ -23,17 +23,19 @@ class LSTree {
             nodes_by_height.resize(height);
             heights.resize(height*num_leaves);
             parents.resize(height*num_leaves);
+            subtree_leaves.resize(height*num_leaves);
             for(int i = 0; i < num_leaves; i++) {
                 nodes_by_height[0].insert(i);
                 subtree_leaves[i] = 1;
+                tree_struct[i] = {-1, -1};
             }
             int node_num = num_leaves;
             int lower_levels = 0;
-            subtree_leaves[-1] = 0;
             for(int h = 1; h < height; h++) {
-                for(int i = 0; i < std::ceil(nodes_by_height[h-1].size()*0.5); i++) {
+                int lev_size = std::ceil(nodes_by_height[h-1].size()*0.5);
+                for(int i = 0; i < lev_size; i++) {
                     nodes_by_height[h].insert(node_num);
-                    if((i == nodes_by_height[h].size()-1) && (nodes_by_height[h-1].size()%2 == 1)) {
+                    if((i == lev_size-1) && (nodes_by_height[h-1].size()%2 == 1)) {
                         tree_struct[node_num] = {2*i+lower_levels, -1};
                     }
                     else {
@@ -41,35 +43,37 @@ class LSTree {
                         parents[2*i+lower_levels+1] = node_num;
                     }
                     parents[2*i+lower_levels] = node_num;
-                    subtree_leaves[node_num] = subtree_leaves[tree_struct[node_num].first] + subtree_leaves[tree_struct[node_num].second];
+                    subtree_leaves[node_num] = get_subtree_leaves(tree_struct[node_num].first) + get_subtree_leaves(tree_struct[node_num].second);
                     heights[node_num] = h;
                     node_num++;
                 }
                 lower_levels += nodes_by_height[h-1].size();
             }
+            subtree_leaves.resize(node_num);
             parents.resize(node_num);
             heights.resize(node_num);
             total_nodes = node_num;
-            nodes.resize(total_nodes);
         }
         LSTree(int l, std::vector<std::pair<float, float>> &leaves) {
-            //update first half for subtree nodes
+            //creating tree structure
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
             heights.resize(height*num_leaves);
             parents.resize(height*num_leaves);
+            subtree_leaves.resize(height*num_leaves);
             for(int i = 0; i < num_leaves; i++) {
                 nodes_by_height[0].insert(i);
                 subtree_leaves[i] = 1;
+                tree_struct[i] = {-1, -1};
             }
             int node_num = num_leaves;
             int lower_levels = 0;
-            subtree_leaves[-1] = 0;
             for(int h = 1; h < height; h++) {
-                for(int i = 0; i < std::ceil(nodes_by_height[h-1].size()*0.5); i++) {
+                int lev_size = std::ceil(nodes_by_height[h-1].size()*0.5);
+                for(int i = 0; i < lev_size; i++) {
                     nodes_by_height[h].insert(node_num);
-                    if((i == nodes_by_height[h].size()-1) && (nodes_by_height[h-1].size()%2 == 1)) {
+                    if((i == lev_size-1) && (nodes_by_height[h-1].size()%2 == 1)) {
                         tree_struct[node_num] = {2*i+lower_levels, -1};
                     }
                     else {
@@ -77,15 +81,17 @@ class LSTree {
                         parents[2*i+lower_levels+1] = node_num;
                     }
                     parents[2*i+lower_levels] = node_num;
-                    subtree_leaves[node_num] = subtree_leaves[tree_struct[node_num].first] + subtree_leaves[tree_struct[node_num].second];
+                    subtree_leaves[node_num] = get_subtree_leaves(tree_struct[node_num].first) + get_subtree_leaves(tree_struct[node_num].second);
                     heights[node_num] = h;
                     node_num++;
                 }
                 lower_levels += nodes_by_height[h-1].size();
             }
+            subtree_leaves.resize(node_num);
             parents.resize(node_num);
             heights.resize(node_num);
             total_nodes = node_num;
+            print_nodes_by_height();
             nodes.resize(total_nodes);
             // initialize leaves
             int leaf = 0;
@@ -94,6 +100,7 @@ class LSTree {
                 leaf++;
             }
             build_w();
+            calc_revenue();
             optimize();
         }
         void print_nodes_by_height() {
@@ -129,72 +136,97 @@ class LSTree {
             return convergence_time;
         }
     private: 
-    void optimize() {
+        void calc_revenue() {
+            int ancestor = num_leaves;
+            for(int i = 1; i < nodes_by_height.size(); i++) {
+                int seen_leaves = 0;
+                while(nodes_by_height[i].count(ancestor) > 0) {
+                    for(int r = seen_leaves + subtree_leaves[tree_struct[ancestor].first]; r < seen_leaves + subtree_leaves[ancestor]; r++) {
+                        for(int l = seen_leaves; l < seen_leaves + subtree_leaves[tree_struct[ancestor].first]; l++) {
+                            revenue += subtree_leaves[ancestor] * w[l][r];
+                            std::cout << "for ancestor " << ancestor << " and nodes " << l << " and " << r << " added " << subtree_leaves[ancestor] << " * " << w[l][r] << std::endl;
+                        }
+                    }
+                    seen_leaves += subtree_leaves[ancestor];
+                    ancestor++;
+                }
+            }
+        }
+        int get_subtree_leaves(int node) {
+            if(node == -1) {
+                return 0;
+            }
+            return subtree_leaves[node];
+        }
+        void optimize() {
+            convergence_time = 0;
             //iterate through greedy search until it stops returning a good revenue
             std::tuple<int, int, int, float> search = greedy_search();
-            convergence_time = 0;
+            //pair c, prev
+            std::pair<int, int> prev_swap = {0, 0};
             while((std::get<3>(search) > 0)) {
-                convergence_time += 1;
+                convergence_time++;
+                revenue += std::get<3>(search);
                 int y = std::get<0>(search);
-                //interchange: (x, c)
-                std::pair<int, int> interchange = tree_struct[y];
+                int x = tree_struct[y].first;
+                int c = tree_struct[y].second;
                 if(std::get<1>(search) == 1) {
-                    interchange.first = interchange.second;
-                    interchange.second = tree_struct[y].first;
+                    x = c;
+                    c = tree_struct[y].first;
                 }
                 int t = std::get<2>(search);
-                //std::cout << "Optimal interchange is y = " << y << "; x = " << interchange.first << "; T" << t << " with profit " << std::get<3>(search) << std::endl;
-                update_w(interchange, t);
-                update_struct(std::get<0>(search), interchange, std::get<2>(search));
-                update_heights(interchange.first);
-                search = greedy_search();
-            }
-            nodes_by_height.shrink_to_fit();
-        }
-        void update_w(std::pair<int, int> interchange, int t) {
-            //t = 1 -> t'; t = 2 -> t''
-            int x = interchange.first;
-            int c = interchange.second;
-            int prev = tree_struct[x].first;
-            if(t == 1) {
-                prev = tree_struct[x].second;
-            }
-            for(int i = 0; i < total_nodes; i++) {
-                if(i != x) {
-                    w[x][i] += w[c][i] - w[prev][i];
+                int prev = tree_struct[x].first;
+                if(t == 1) {
+                    prev = tree_struct[x].second;
                 }
-            }
-        }
-        void update_heights(int node) {
-            int h = std::max(heights[tree_struct[node].first], heights[tree_struct[node].second]) + 1;
-            while(h != heights[node]) {
-                nodes_by_height[heights[node]].erase(node);
-                heights[node] = h;
-                if(nodes_by_height.size() <= (heights[node])) {
-                    nodes_by_height.resize(heights[node]+1);
-                }
-                nodes_by_height[heights[node]].insert(node);
-                h+=1;
-                if(node < total_nodes-1) {
-                    if(node == tree_struct[parents[node]].second) {
-                        h = std::max(h, heights[tree_struct[parents[node]].first]+1);
-                    }
-                    else {
-                        h = std::max(h, heights[tree_struct[parents[node]].second]+1);
-                    }
-                    node = parents[node];
+                if((prev == prev_swap.first) && (c == prev_swap.second)) {
+                    search = {0, 0, 0, 0};
                 }
                 else {
-                    h = heights[node];
+                    update_w(x, c, prev);
+                    update_struct(std::get<0>(search), x, c, std::get<2>(search));
+                    //updates heights and number of subtree leaves propagating upward
+                    update_upwards(x);
+                    search = greedy_search();
                 }
             }
         }
-        void update_struct(int y, std::pair<int, int> interchange, int t) {
+        void update_w(int x, int c, int prev) {
             //t = 1 -> t'; t = 2 -> t''
-            int x = interchange.first;
+            for(int i = 0; i < total_nodes; i++) {
+                if(i != x) {
+                    //typo in jowhari
+                    w[x][i] += w[c][i] - w[prev][i];
+                    w[i][x] = w[x][i];
+                }
+            }
+        }
+        void update_upwards(int node) {
+            //updates both height and leaves in subtree rooted at this node by propagating upwards
+            int h = std::max(heights[tree_struct[node].first], heights[tree_struct[node].second]) + 1;
+            while(node <= (total_nodes-1)) {
+                subtree_leaves[node] = get_subtree_leaves(tree_struct[node].first) + get_subtree_leaves(tree_struct[node].second);
+                if(heights[node] != h) {
+                    nodes_by_height[heights[node]].erase(node);
+                    heights[node] = h;
+                    if(nodes_by_height.size() <= (heights[node])) {
+                        nodes_by_height.resize(heights[node]+1);
+                    }
+                    nodes_by_height[heights[node]].insert(node);
+                }
+                h = std::max(heights[tree_struct[parents[node]].second]+1, heights[tree_struct[parents[node]].first]+1);
+                if(node == (total_nodes-1)) {
+                    node++;
+                }
+                else {
+                    node = parents[node];
+                }
+            }
+        }
+        void update_struct(int y, int x, int c, int t) {
+            //t = 1 -> t'; t = 2 -> t''
             int a = tree_struct[x].first;
             int b = tree_struct[x].second;
-            int c = interchange.second;
             parents[c] = x;
             if(t == 1) {
                 parents[b] = y;
@@ -256,10 +288,8 @@ class LSTree {
             }
             for(int i = 0; i < nodes_by_height.size(); i++) { //height
                 for(auto iter_i = nodes_by_height[i].begin(); iter_i != nodes_by_height[i].end(); ++iter_i) { //all nodes of height i
-                    //std::cout << "Building node " << (*iter_i) << " at height " << i << std::endl;
                     for(int k = 0; k <= i; k++) { //height of second node
                         for(auto iter_k = nodes_by_height[k].begin(); iter_k != nodes_by_height[k].end(); ++iter_k) { //all nodes of height k
-                            //std::cout << "against node " << (*iter_k) << " at height " << k << std::endl;
                             int node1 = (*iter_i);
                             int node2 = (*iter_k);
                             if(i == 0 && k == 0) {
