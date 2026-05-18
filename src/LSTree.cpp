@@ -144,7 +144,6 @@ class LSTree {
                     for(int r = seen_leaves + subtree_leaves[tree_struct[ancestor].first]; r < seen_leaves + subtree_leaves[ancestor]; r++) {
                         for(int l = seen_leaves; l < seen_leaves + subtree_leaves[tree_struct[ancestor].first]; l++) {
                             revenue += subtree_leaves[ancestor] * w[l][r];
-                            std::cout << "for ancestor " << ancestor << " and nodes " << l << " and " << r << " added " << subtree_leaves[ancestor] << " * " << w[l][r] << std::endl;
                         }
                     }
                     seen_leaves += subtree_leaves[ancestor];
