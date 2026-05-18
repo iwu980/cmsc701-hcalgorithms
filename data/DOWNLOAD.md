@@ -7,7 +7,7 @@ https://datasets.cellxgene.cziscience.com/c6ea3545-9200-4497-8591-08f687626182.h
 - cells: 15063
 
 https://cellxgene.cziscience.com/collections/065ad318-59fd-4f8c-b4b1-66caa7665409 > gland immune atlas
-https://datasets.cellxgene.cziscience.com/3b2878a8-4798-4ae0-b284-e77ed7c1b6a5.h5ad
+https://datasets.cellxgene.cziscience.com/e9078993-a985-4159-b770-a0baf954d7f6.h5ad
 - cells=6,362
 
 https://cellxgene.cziscience.com/collections/f4774e03-b5a7-473b-99d6-eeb80592c5db
