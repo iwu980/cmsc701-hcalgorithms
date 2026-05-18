@@ -36,22 +36,27 @@ class Node:
         else:
             return self.n_leaves , self.dist
 
-def find_path(root, target):
+def find_path(root, target, cache):
+    if (root, target) in cache:
+        return cache[root, target]
     if root == target:
+        cache[(root, target)] = [root]
         return [root]
     if root.left is not None:
-        left_path = find_path(root.left, target)
+        left_path = find_path(root.left, target, cache)
         if left_path is not None:
+            cache[(root, target)] = [root] + left_path
             return [root] + left_path
     if root.right is not None:
-        right_path = find_path(root.right, target)
+        right_path = find_path(root.right, target, cache)
         if right_path is not None:
+            cache[(root, target)] = [root] + right_path
             return [root] + right_path
     return None
 
-def lca(root, leaf1, leaf2):
-    path1 = find_path(root, leaf1)
-    path2 = find_path(root, leaf2)
+def lca(root, leaf1, leaf2, path_cache):
+    path1 = find_path(root, leaf1, path_cache)
+    path2 = find_path(root, leaf2, path_cache)
     lca_node = None
     for n1, n2 in zip(path1, path2):
         if n1 == n2:
@@ -84,11 +89,12 @@ def calculate_metric(df, gamma, root, nodes, metric):
     W = rbf_kernel(df.values, gamma=gamma)  # Constructing a Gaussian similarity matrix
     n = W.shape[0]
     result = 0.0
+    cache = {} # cache results of find_path
     for i in range(n):
         if i % 100 == 0:
             print("Calculate metric...", i)
         for j in range(i + 1, n):
-            n_leaves = lca(root, nodes[i], nodes[j]).n_leaves
+            n_leaves = lca(root, nodes[i], nodes[j], cache).n_leaves
             result += W[i, j] * metric(n, n_leaves)
     return result
 
