@@ -89,6 +89,7 @@ def calculate_metric(df, gamma, root, nodes, metric):
     W = rbf_kernel(df.values, gamma=gamma)  # Constructing a Gaussian similarity matrix
     n = W.shape[0]
     result = 0.0
+    divisor = 0.0 # Jowhari's divisor from p 10: the calculated revenue is divided by (n − 2) ∑  i<j w(i, j)
     cache = {} # cache results of find_path
     for i in range(n):
         if i % 100 == 0:
@@ -96,7 +97,8 @@ def calculate_metric(df, gamma, root, nodes, metric):
         for j in range(i + 1, n):
             n_leaves = lca(root, nodes[i], nodes[j], cache).n_leaves
             result += W[i, j] * metric(n, n_leaves)
-    return result
+            divisor+= W[i, j]
+    return result / (n-2) / divisor
 
 if __name__ == "__main__":
     datapath = "data/c6ea3545-9200-4497-8591-08f687626182.h5ad"
@@ -110,7 +112,9 @@ if __name__ == "__main__":
         index=adata.obs_names, 
         columns=['UMAP_1', 'UMAP_2']
     )
-    df= umap_df.sample(n=1000) # NOTE: sample 1000 cells from the dataframe ... takes about 5 minutes to run on Caspar's machine
+    num_cells = 1000
+    print(f"Sampling {num_cells} cells...")
+    df = umap_df.head(num_cells) # umap_df.sample(n=num_cells)
 
     print("Computing linkage...")
     labels = [f"Sample {i}" for i in range(len(df))]
@@ -122,7 +126,7 @@ if __name__ == "__main__":
     plt.title("Dendrogram (Average Linkage)")
     plt.xlabel("Samples")
     plt.ylabel("Distance")
-    plt.savefig("revenue.png")
+    #plt.savefig("revenue.png") // generate plot
 
     print("Computing MW revenue...")
     gamma = 1

@@ -1,6 +1,10 @@
 # Data
 data/*.h5ad
 
+# Figures
+*.png
+
+# Cpp
 build/
 
 # Libraries
