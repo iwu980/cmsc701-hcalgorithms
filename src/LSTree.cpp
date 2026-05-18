@@ -14,7 +14,7 @@ class LSTree {
     std::vector<std::unordered_set<int>> nodes_by_height;
     std::vector<std::vector<float>> w; // similarity function
     std::vector<int> parents, heights;
-    int num_leaves, total_nodes;
+    int num_leaves, total_nodes, convergence_time;
     public: 
         LSTree() {}
         LSTree(int l) {
@@ -125,11 +125,16 @@ class LSTree {
             }
             std::cout << std::endl;
         }
+        int get_convergence_iterations() {
+            return convergence_time;
+        }
     private: 
     void optimize() {
             //iterate through greedy search until it stops returning a good revenue
             std::tuple<int, int, int, float> search = greedy_search();
+            convergence_time = 0;
             while((std::get<3>(search) > 0)) {
+                convergence_time += 1;
                 int y = std::get<0>(search);
                 //interchange: (x, c)
                 std::pair<int, int> interchange = tree_struct[y];
