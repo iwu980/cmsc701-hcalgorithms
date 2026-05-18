@@ -10,52 +10,71 @@ class LSTree {
     std::unordered_map<int, std::pair<int, int>> tree_struct;
     //begins with a binary tree where the children of node n are assumed to be the node given by 2n+1 and 2n+2.
     std::unordered_map<int, std::pair<float, float>> nodes;
-    std::vector<std::unordered_set<int>> nodes_by_height;
+    std::vector<std::vector<int>> nodes_by_height;
     std::vector<std::vector<float>> w; // similarity function
-    int num_leaves;
+    int num_leaves, total_nodes;
     public: 
         LSTree() {}
         LSTree(int l) {
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
-            int node_num = 2 * num_leaves - 2;
-            while((node_num*2+1) > (2*num_leaves-2)) {
-                nodes_by_height[0].insert(node_num);
-                node_num--;
+            int node_num = 0;
+            nodes_by_height[0].resize(num_leaves);
+            for(int i = 0; i < num_leaves; i++) {
+                nodes_by_height[0][i] = node_num;
+                node_num++;
             }
-            for(int i = 1; i < height; i++) {
-                while((node_num >= 0) && (nodes_by_height[i-1].count(node_num*2+1) > 0)) {
-                    nodes_by_height[i].insert(node_num);
-                    node_num--;
+            int lower_levels = 0;
+            for(int h = 1; h < height; h++) {
+                nodes_by_height[h].resize(std::ceil(nodes_by_height[h-1].size()*0.5));
+                for(int i = 0; i < std::ceil(nodes_by_height[h-1].size()*0.5); i++) {
+                    nodes_by_height[h][i] = node_num;
+                    if((i == nodes_by_height[h].size()-1) && (nodes_by_height[h-1].size()%2 == 1)) {
+                        tree_struct[node_num] = {2*i+lower_levels, -1};
+                    }
+                    else {
+                        tree_struct[node_num] = {2*i+lower_levels, 2*i+1+lower_levels};
+                    }
+                    node_num++;
                 }
+                lower_levels += nodes_by_height[h-1].size();
             }
-            //print_nodes_by_height();
+            total_nodes = node_num;
         }
         LSTree(int l, std::vector<std::pair<float, float>> &leaves) {
             num_leaves = l;
             int height = std::ceil(std::log2(num_leaves*2));
             nodes_by_height.resize(height);
-            int node_num = 2 * num_leaves - 2;
-            // Assign partitions H_i
-            while((node_num*2+1) > (2*num_leaves-2)) {
-                nodes_by_height[0].insert(node_num);
-                node_num--;
+            int node_num = 0;
+            nodes_by_height[0].resize(num_leaves);
+            for(int i = 0; i < num_leaves; i++) {
+                nodes_by_height[0][i] = node_num;
+                node_num++;
             }
-            for(int i = 1; i < height; i++) {
-                while((node_num >= 0) && (nodes_by_height[i-1].count(node_num*2+1) > 0)) {
-                    nodes_by_height[i].insert(node_num);
-                    node_num--;
+            int lower_levels = 0;
+            for(int h = 1; h < height; h++) {
+                nodes_by_height[h].resize(std::ceil(nodes_by_height[h-1].size()*0.5));
+                for(int i = 0; i < std::ceil(nodes_by_height[h-1].size()*0.5); i++) {
+                    nodes_by_height[h][i] = node_num;
+                    if((i == nodes_by_height[h].size()-1) && (nodes_by_height[h-1].size()%2 == 1)) {
+                        tree_struct[node_num] = {2*i+lower_levels, -1};
+                    }
+                    else {
+                        tree_struct[node_num] = {2*i+lower_levels, 2*i+1+lower_levels};
+                    }
+                    node_num++;
                 }
+                lower_levels += nodes_by_height[h-1].size();
+                std::cout << "Built height " << h << std::endl;
             }
-            print_nodes_by_height();
+            total_nodes = node_num;
             // initialize leaves
             for(int i = 0; i < leaves.size(); i++) {
-                nodes[num_leaves*2-i-2] = leaves[i];
+                nodes[nodes_by_height[0][i]] = leaves[i];
             }
             //print_node_vals();
             build_w();
-            print_w();
             std::cout << "Printing finished" << std::endl;
         }
         void print_nodes_by_height() {
@@ -78,55 +97,45 @@ class LSTree {
         }
     private: 
         void build_w() {
-            std::cout << "starting build" << std::endl;
-            w.resize(num_leaves*2-1);
+            w.resize(total_nodes);
             for(int i = 0; i < w.size(); i++) {
-                w[i].resize(num_leaves*2-1);
+                w[i].resize(total_nodes);
             }
             for(int i = 0; i < nodes_by_height.size(); i++) { //height
                 for(auto iter_i = nodes_by_height[i].begin(); iter_i != nodes_by_height[i].end(); ++iter_i) { //all nodes of height i
+                    //std::cout << "Building node " << (*iter_i) << " at height " << i << std::endl;
                     for(int k = 0; k <= i; k++) { //height of second node
                         for(auto iter_k = nodes_by_height[k].begin(); iter_k != nodes_by_height[k].end(); ++iter_k) { //all nodes of height k
+                            //std::cout << "against node " << (*iter_k) << " at height " << k << std::endl;
                             int node1 = (*iter_i);
                             int node2 = (*iter_k);
                             if(i == 0 && k == 0) {
                                 w[node1][node2] = gaussian_kernel(node1, node2);
-                                w[node1][node2] = gaussian_kernel(node1, node2);
+                                w[node2][node1] = w[node1][node2];
                             }
                             else {
-                                std::vector<int> first;
-                                std::vector<int> second;
+                                std::pair<int, int> first;
+                                std::pair<int, int> second;
                                 if(i == 0) {
-                                    first.resize(1);
-                                    first[0] = node1;
-                                }
-                                else if((node1*2+2) > (2*num_leaves-1)) {
-                                    first.resize(1);
-                                    first[0] = node1*2+1;
+                                    first = {node1, -1};
                                 }
                                 else {
-                                    first.resize(2);
-                                    first[0] = node1*2+1;
-                                    first[0] = node1*2+2;
+                                    first = tree_struct[node1];
                                 }
                                 if(k == 0) {
-                                    second.resize(1);
-                                    second[0] = node2;
-                                }
-                                else if((node2*2+2) > (2*num_leaves-1)) {
-                                    second.resize(1);
-                                    second[0] = node2*2+1;
+                                    second = {node2, -1};
                                 }
                                 else {
-                                    second.resize(2);
-                                    second[0] = node2*2+1;
-                                    second[1] = node2*2+2;
+                                    second = tree_struct[node2];
                                 }
-                                w[node1][node2] = 0;
-                                for(int f = 0; f < first.size(); f++) {
-                                    for(int s = 0; s < second.size(); s++) {
-                                        w[node1][node2] += w[f][s];
-                                    }
+                                if(first.second == -1) {
+                                    w[node1][node2] = w[first.first][second.first] + w[first.first][second.second];
+                                }
+                                else if(second.second == -1) {
+                                    w[node1][node2] = w[first.first][second.first] + w[first.second][second.first];
+                                }
+                                else {
+                                    w[node1][node2] = w[first.first][second.first] + w[first.first][second.second] + w[first.second][second.first] + w[first.second][second.second];
                                 }
                                 w[node2][node1] = w[node1][node2];
                             }
