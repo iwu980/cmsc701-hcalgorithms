@@ -1,6 +1,5 @@
 import sys
 import anndata
-import scanpy as sc
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -89,15 +88,15 @@ def calculate_metric(df, gamma, root, nodes, metric):
     W = rbf_kernel(df.values, gamma=gamma)  # Constructing a Gaussian similarity matrix
     n = W.shape[0]
     result = 0.0
-    divisor = 0.0 # Jowhari's divisor from p 10: the calculated revenue is divided by (n − 2) ∑  i<j w(i, j)
+    scale_factor = 0.0 # Jowhari's scale_factor from p 10: the calculated revenue is divided by (n − 2) ∑  i<j w(i, j)
     cache = {} # cache results of find_path
     for i in range(n):
         # if i % 100 == 0: print("Calculate metric...", i)
         for j in range(i + 1, n):
             n_leaves = lca(root, nodes[i], nodes[j], cache).n_leaves
             result += W[i, j] * metric(n, n_leaves)
-            divisor+= W[i, j]
-    return result / (n-2) / divisor
+            scale_factor+= W[i, j]
+    return result / (n-2) / scale_factor
 
 def average_link(datapath):
     adata = anndata.read_h5ad(datapath)
@@ -109,7 +108,7 @@ def average_link(datapath):
         columns=['UMAP_1', 'UMAP_2']
     )
     num_cells = 1000
-    print(f"Sampling {num_cells} cells...")
+    print(f"Sampling the first {num_cells} cells...")
     df = umap_df.head(num_cells) # umap_df.sample(n=num_cells)
 
     print("Computing linkage...")
