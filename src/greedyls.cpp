@@ -2,7 +2,7 @@
 #include "LSTree.cpp"
 #include <hdf5.h>
 #include <vector>
-#include <iostream>
+#include <random>
 
 int main(int argc, char* argv[]) {
     const char* filepath = "data/c6ea3545-9200-4497-8591-08f687626182.h5ad"; // default data
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]) {
     }
 
     // initialize LSTree with vector
-    num_cells = 25; // NOTE: for the sake of testing, we will start with pretending there are <100 cells
+    num_cells = 1000; // NOTE: for the sake of testing, we will start with pretending there are <100 cells
     std::vector<std::pair<float, float>> leaves;
     leaves.reserve(num_cells);
     for (int i = 0; i < num_cells; i++) {
@@ -56,7 +56,18 @@ int main(int argc, char* argv[]) {
         float y = umap_coords[i * num_dims + 1];
         leaves.push_back(std::pair(x, y));
     } 
-    LSTree(leaves.size(), leaves);
+    int tot_its = 0;
+    float tot_rev = 0;
+    for(int i = 0; i < 5; i++) {
+        std::random_device rd;
+        std::mt19937 g(rd());
+        std::shuffle(leaves.begin(), leaves.end(), g);
+        LSTree t = LSTree(leaves.size(), leaves);
+        tot_its += t.get_convergence_iterations();
+        tot_rev += t.get_revenue();
+    }
+    std::cout << "Average rev: " << (tot_rev/5) << std::endl;
+    std::cout << "Average its: " << (tot_its/5) << std::endl;
 
     H5Sclose(space);
     H5Dclose(dataset);
