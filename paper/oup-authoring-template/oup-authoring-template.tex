@@ -1,0 +1,342 @@
+%%
+%% Copyright 2025 Oxford University Press
+%%
+%% This file is part of the 'oup-authoring-template Bundle'.
+%% ---------------------------------------------
+%%
+%% It may be distributed under the conditions of the LaTeX Project Public
+%% License, either version 1.3 of this license or (at your option) any
+%% later version.  The latest version of this license is in
+%%    https://www.latex-project.org/lppl.txt
+%% and version 1.2 or later is part of all distributions of LaTeX
+%% version 1999/12/01 or later.
+%%
+%% The list of all files belonging to the 'oup-authoring-template Bundle' is
+%% given in the file `manifest.txt'.
+%%
+%% Template article for Oxford University Press's document class `oup-authoring-template'
+%% with bibliographic references
+%%
+
+%%%CONTEMPORARY%%%
+\documentclass[unnumsec,webpdf,contemporary,large,numbered]{oup-authoring-template}%
+%\documentclass[unnumsec,webpdf,contemporary,large,numbered]{oup-authoring-template}% uncomment this line to get the numbered reference output
+%\documentclass[unnumsec,webpdf,contemporary,medium]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,contemporary,mediumone]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,contemporary,small]{oup-authoring-template}
+
+%%%MODERN%%%
+%\documentclass[unnumsec,webpdf,modern,large]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,modern,large,numbered]{oup-authoring-template}%   uncomment this line to get the numbered reference output
+%\documentclass[unnumsec,webpdf,modern,medium]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,modern,mediumone]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,modern,small]{oup-authoring-template}
+
+%%%TRADITIONAL%%%
+%\documentclass[unnumsec,webpdf,traditional,large]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,traditional,large,numbered]{oup-authoring-template}%   uncomment this line to get the numbered reference output
+%\documentclass[unnumsec,webpdf,traditional,medium]{oup-authoring-template}
+%\documentclass[unnumsec,webpdf,traditional,mediumone]{oup-authoring-template}
+%\documentclass[namedate,webpdf,traditional,small]{oup-authoring-template}
+
+%\onecolumn % for one column layouts
+
+%\usepackage{showframe}
+
+
+% line numbers
+%\usepackage[mathlines, switch]{lineno}
+%\usepackage[right]{lineno}
+
+\theoremstyle{thmstyleone}%
+\newtheorem{theorem}{Theorem}%  meant for continuous numbers
+%%\newtheorem{theorem}{Theorem}[section]% meant for sectionwise numbers
+%% optional argument [theorem] produces theorem numbering sequence instead of independent numbers for Proposition
+\newtheorem{proposition}[theorem]{Proposition}%
+%%\newtheorem{proposition}{Proposition}% to get separate numbers for theorem and proposition etc.
+\theoremstyle{thmstyletwo}%
+\newtheorem{example}{Example}%
+\newtheorem{remark}{Remark}%
+\theoremstyle{thmstylethree}%
+\newtheorem{definition}{Definition}
+
+\usepackage{xcolor}
+\definecolor{dkblue}{rgb}{0,0.1,0.7}
+\definecolor{dkgreen}{rgb}{0,0.5,0}
+\definecolor{dkred}{rgb}{0.7,0,0}
+\definecolor{dkpurple}{rgb}{0.7,0,0.4}
+\definecolor{olive}{rgb}{0.4, 0.4, 0.0}
+\definecolor{teal}{rgb}{0.0,0.5,0.5}
+\definecolor{azure}{rgb}{0.0, 0.4, .8}
+
+\newcommand\cn{\textcolor{blue}{\textbf{CITE}~}}
+\newcommand\lio[1]{\textcolor{dkred}{\textbf{LIO:} #1}}
+\newcommand\cas[1]{\textcolor{dkpurple}{\textbf{CAS:} #1}}
+
+\newcommand\REV{\mathsf{REV}}
+
+%\usepackage{draftwatermark}
+%\SetWatermarkText{Draft}
+%%Uncomment  \usepackage{draftwatermark} and \SetWatermarkText{Draft} to watermark your PDF as a draft
+\begin{document}
+
+\journaltitle{Journal Title Here}
+\DOI{DOI added during production}
+\copyrightyear{YEAR}
+\pubyear{YEAR}
+\vol{XX}
+\issue{x}
+\access{Published: Date added during production}
+\appnotes{Paper}
+
+\firstpage{1}
+
+%\subtitle{Subject Section}
+
+\title[HC via Local Search]{Hierarchical Clustering via Local Search}
+
+\author{Lio Wu}
+\author{Caspar Popova}
+
+\received{Date}{0}{Year}
+\revised{Date}{0}{Year}
+\accepted{Date}{0}{Year}
+
+%\editor{Associate Editor: Name}
+
+%\abstract{
+%\textbf{Motivation:} .\\
+%\textbf{Results:} .\\
+%\textbf{Availability:} .\\
+%\textbf{Contact:} \href{name@email.com}{name@email.com}\\
+%\textbf{Supplementary information:} Supplementary data are available at \textit{Journal Name}
+%online.}
+
+\abstract{Hierarchical clustering is used in genomics to analyze genes by organizing data into a tree-like structure of clusters. 
+In this project, we study an agglomerative local search algorithm for hierarchical clustering.
+Agglomerative methods do clustering by assigning each data point to its own cluster, then merging clusters. 
+The local search method, rather than merging nodes, uses a tree re-arrangement operation known as \textit{interchange} to swap two subtrees when the resulting tree is more profitable.
+In this project, we implement Jowhari's local search methodology of hierarchical clustering\footnote{Our implementation is available at https://github.com/iwu980/cmsc701-hcalgorithms/tree/jowhari-v1}.
+We compare the greedy variation of the local search algorithm to the average link, a common agglomerative clustering algorithm, by measure the revenue of the produced cluster. We demonstrate that our implementation does not match the revenue of average link, and analyze reasons why we fell short.
+} 
+
+\maketitle
+
+\section{Introduction}
+Hierarchical clustering is used in genomics to analyze gene similarity by organizing data into a tree-like structure of clusters. In the tree, the root represents all data points, each node represents a cluster of similar data points, and the leaves are the data points. This is particularly useful for examining data at many different scales, e.g., individual cells to gene mutations. Hierarchical clustering can be viewed as an optimization problem, where we seek a tree with optimal revenue using some symmetric function $w : [n] \times[n] \rightarrow \mathbb{R}^{+}$ that specifies the pairwise similarity between $n$ data points \cite{jowhari2024hierarchicalclusteringlocalsearch}. Given a clustering tree $T$ over $n$ leaves, where each leaf is numbered $\{1...n\}$, we use the Moseley-Wang revenue function \cite{10.5555/3648699.3648700}. $w(i,j)$ is the similarity between 2 datapoints $i$ and $j$. $T_{i,j}$ denotes the subtree that is rooted at the lowest common ancestor of $i$ and $j$.
+
+\[ \textbf{rev}(T) = \sum_{i<j}{}{w(i,j)(n-|T_{i,j}|)} \]
+
+The key challenge of hierarchical clustering is that computing the optimal tree (a tree having optimal revenue) is an NP-hard problem \cite{10.1145/2897518.2897527}. There are two major methods of hierarchical clustering, agglomerative and divisive, that seek to maximize the revenue. Agglomerative methods initially assign each data point to its own cluster and then merge clusters to build a tree from bottom up using some distance or similarity measure to decide which clusters are merged. Divisive methods start with one cluster containing all data points, and then split the clusters to build the hierarchy top-down \cite{jowhari2024hierarchicalclusteringlocalsearch}.
+
+Now, we discuss Jowhari's method of hierarchical clustering via local search \cite{jowhari2024hierarchicalclusteringlocalsearch}. The local search algorithm is more similar to agglomerative methods, where the next cluster "merged" is determined by a search for the local change that produces the most revenue. In practice, though, Jowhari proceeds by initializing a random tree where the data points are the leaves and then either finding the most profitable interchange until the revenue can no longer be improved (the greedy local search method) or looking at random edges until there there are no more profitable interchanges left (the random local search method). Concretely, given $n$ data points, the local search algorithm initializes a binary unordered tree with $n$ leaves and $2n-1$ nodes, such that all data points are at a depth $log(n)$ in the tree. The algorithm then relies on a tree re-arrangement operation, interchange, and compares the revenue of all possible interchanges in the current tree to decide which subtrees should be locally updated.
+
+As shown in the Figure \ref{fig:interchange}, the interchange operation applies to a subtree $y$, where $y$ is the parent of $x$ and $x$ is a non-leaf and $y$ is the parent of $x$. It yields one of the outcomes (b) or (c) in the same figure, where the subtree C, the second child of $y$, is swapped with either A or B. Importantly, this interchange assumes that the tree is unordered (i.e., it does not matter which child is the left and which is the right).
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{oup-authoring-template/doc/jowhari_fig2.png}
+    \caption{The interchange operation on trees (Figure from \cite{jowhari2024hierarchicalclusteringlocalsearch}).}
+    \label{fig:interchange}
+\end{figure}
+
+%\cas{briefly introduce theoretical guarantees of jowhari and what we're comparing on, like the expected averag revenue - edit the following Ps} expected revenue of random tree is at least one third the optimal revenue - gives us a lower bound. we want a method whose average revenue is more than one third the optimal revenue. we direct the reader to jowhari's paper for proofs of these facts. 
+
+The theoretical bounds of this approach mirror the popular agglomerative approach, the average link algorithm \cite{10.5555/3648699.3648700}. In both cases, each algorithm is guaranteed to produce a tree with at least $1/3$ of the maximum revenue, which is $(n-2)\Sigma_{i<j}w(i,j)$. This is because in a maximal scenario, there would only be two leaves ($i$ and $j$) in a subtree rooted at their shared lowest ancestor. However, a random tree's expected revenue is also $1/3$ of the maximum revenue, which means that the lower bound here is not a particularly good one.\cite{10.5555/3648699.3648700}  While the theoretical bounds are not particularly good, Jowhari's empirical results~\cite{jowhari2024hierarchicalclusteringlocalsearch} suggest that the average revenue is much better than the guaranteed lower bound. However, Jowhari's chosen datasets do not compare to the scale of single-cell genomics data. Similarly, Jowhari's algorithm runs very well and converges relatively quickly on smaller datasets, with its $\mathcal{O}(n^2)$ preprocessing time and its $\mathcal{O}(n)$ interchanges, but its performance has not been demonstrated for larger datasets. This paper evaluates the relevance of Jowhari's method for large-scale genomics datasets through the metrics of convergence time and revenue.
+
+%Any locally optimal tree also guarantees at least $1/3$ of the optimal revenue and that every tree generated by the average link algorithm is a locally optimal tree. A random tree's expected revenue is also $1/3$ of the optimal revenue, but it is not locally optimal, which is why these trees typically do a much better job than the lower bound on the revenue. \cite{10.5555/3648699.3648700}
+
+
+In summary, in our project:
+\begin{itemize}
+    \item We implement Jowhari's local search algorithm (Section \ref{sec:background}) and discuss our implementation (Section \ref{sec:implementation}).
+    \item We compare our implementation to the average link algorithm, and analyze the differences between our results (Section \ref{sec:eval}).
+\end{itemize}
+
+\section{Background: Local Search} \label{sec:background}
+In this section, we describe Jowhari's local search algorithm in detail. Jowhari's algorithm consists of three major steps: the preprocessing, finding the most profitable interchange, and updating the data structures.
+
+%Next, the most profitable interchange can be discovered by 
+
+\subsection{Initialization}
+Given $n$ data points, we instantiate an unordered binary tree with $n$ leaves and $m=2n-1$ nodes of height $t$. Each node has a unique identifier $u$ and $T_u$ is the subtree rooted at $u$.
+
+We instantiate a similarity matrix {\sf W[i][j]} that stores the similarity between each pair of nodes $i,j$ in the tree. To populate {\sf W[i][j]}, we partition the nodes (in $\mathcal{O}(n)$ time) into subsets $H_i$ where $H_i$ contains all the nodes that root a subtree of height $i$.
+
+We use the Gaussian kernel, below, as the similarity function $w$ with $\sigma=1$. 
+We begin by using $w$ to compute \textsf{W[i][j]} for every pair of leaves.
+
+\[ K(x,x') = e^{-\frac{||x - x'||^2}{2\sigma^2}} \]
+
+Next, we must compute {\sf W[i][j]} for every pair of leaves $i,j$ in $H_r \times H_{0<j<r}$ for $r$ from 1 to $t$. We use the following formula, where $i_1, i_2$ are the 2 children of $i$ and $j_1, j_2$ are the children of $j$. 
+
+\[
+{\sf W[i][j] = W[i_1][j_1] + W[i_1][j_2] + W[i_2][j_1] + W[i_2][j_2]}
+\]
+
+If $i$ happens to be a leaf, then $i_1$ and $i_2$ are substituted for itself; in other words, $W[i][j] = W[i][j_1]+W[i][j_2]$ when $i$ is a leaf. The complexity of the initialization requires $\mathcal{O}(n^2)$ time and $\mathcal{O}(n^2)$ space. 
+
+
+\subsection{Local Search and Interchange}
+\textit{Finding the most profitable interchange.}
+To choose where to perform the interchange, we must first calculate the revenue interchange using the information in {\sf W} for every edge. For every subtree $T$, as shown in Figure \ref{fig:interchange}, we compute the revenue of the two possible interchanges that create trees $T^\prime$ and $T^{\prime\prime}$ as follows:
+
+\[
+\REV(T^{\prime}) = \REV(T) + (|B|w(A,C)- |C|w(A,B))
+\]
+\[
+\REV(T^{\prime\prime})=\REV(T) + (|A|w(B,C) - |C|w(A,B))
+\]
+
+In other words, because $x$ remains rooted at this tree regardless of the interchange, we can calculate the increase in local revenue at the tree rooted at T. The subtrees A, B, and C have the same revenue and similarity scores within themselves, so by by subtracting the revenue generated by  that are no longer children of $x$ while adding the revenue generated by new leaves, we can get the change in revenue for $\REV(T)$. This is not necessarily the change in global revenue. Because all of the subtrees in these calculations remain children of the root, the similarity scores within subtrees and revenue within subtrees changes. However, by approaching locally optimal trees we can approximate the tree with maximum revenue. In iterating over every edge $(y, x)$, where $x$ is a child of $y$ with two children and $y$ also has two children, the greedy local search algorithm will find the maximum value among every possible combination of subtrees between $(|A|w(B,C) - |C|w(A,B))$ and $(|B|w(A,C)- |C|w(A,B))$. This edge is subsequently interchanged. Because the steps done to evaluate each edge are constant time arithmetic, this gives us an $\mathcal{O}(n)$ search because the number of edges is directly proportional to the number of leaves.
+
+\textit{Update operation on the matrices.}
+Once we have selected the most profitable interchange and updated the tree itself, we must update {\sf W}. The only subtree whose leaves have changed are $x$. Thus, it is sufficient to update entries that contain $x$. For each node $i$, where $z$ is the old child of $x$ and $z'$ is the new child of $x$, we can just set {\sf W[x][i]} and {\sf W[i][x]} to be {\sf W[x][i] + W[z'][i] - W[z][i]}. This update is done in $\mathcal{O}(n)$ time.
+
+\subsection{Theoretical complexity}
+Any HC tree of order n can be transformed into another HC tree of order n with $\mathcal{O}(n * \mathsf{log} (n)) $ interchanges.
+
+Jowhari's algorithm uses an array structure that takes $\mathcal{O}(n^2)$ space and $\mathcal{O}(n)$ time for each interchange.
+
+
+\section{Implementation} \label{sec:implementation}
+In this section, we discuss the concrete details of our implementation of Jowhari's local search algorithm. 
+
+We represent the binary tree with a collection of data structures where the nodes are 0-indexed, beginning from the leaves. Instead of using a traditional pointer structure, we use a map $n \rightarrow (n, n)$ from a node identifier $u$ to its children identifiers $u_1, u_2$ to make the interchange process faster. We show an example of a computed HC dendrogram in in Figure \ref{fig:tree}. Additionally, we use the preprocessing structures identified by Jowhari: the similarity score matrix and the list of nodes by height. To make auxiliary calculations faster and simpler, we also store arrays with the data at each leaf, the height of each node, the parent of each node, and the number of leaves in the subtree rooted at that node. All of these structures require $\mathcal{O}(n)$ space, except for the similarity score matrix, which requires $\mathcal{O}(n^2)$ space. Similarly, the height partition, data t each leaf, parent of each node, and the number of subtrees rooted at each node can be computed in one $\mathcal{O}(n)$ pass and the height of each node can be calculated with an additional pass using the height partitions. The similarity matrix dominates the time complexity, requiring $\mathcal{O}(n^2)$ time.
+From there, we repeatedly find the edge with the highest local interchange profit until we can no longer find such an edge, as described in Section \ref{sec:background} by iterating over all edges between a parent with two children and its child with two children. Then, we update the tree structure by shifting our map. Our height- and subtree-related auxiliary structures can be updated in one pass going up the tree in $\mathcal{O}(n)$ time, beginning from $x$ and doing arithmetic with nodes on the path to the root. Additionally, we must update the similarity score matrix, which is proven possible in $\mathcal{O}(n)$ time in Section \ref{sec:background}. However, because for large datasets, the algorithm often will not converge in a reasonable amount of time, we have the following additional halt conditions:
+\begin{enumerate}
+    \item The global revenue is the same as it was 1,000 iterations ago,
+    \item We have reached 78,000 interchanges and the global revenue is less than it was 1,000 iterations ago,
+    \item The interchange involves swapping the same nodes as the last interchange, OR
+    \item We have reached 100,000 interchanges
+\end{enumerate}
+This does influence the data shown in Section \ref{sec:eval} by setting the halt points at even 1,000 intervals away from one another and explains the outliers at 78,000 interchanges.
+In order to calculate the global revenue, we developed the following algorithm:
+\begin{enumerate}
+    \item Make clusters $C[n]$ of all leaves with parents that have a height of 1, where the height is defined as the longest path from a given node to a leaf. Each parent $n$ has its own set of leaves.
+    \item Select a cluster $C[n]$. If the sibling of $n$, call this node $s$, is not a leaf and not in the list of cluster roots, pick a different cluster.
+    \item If the sibling is a leaf, then make $C[s]$ a list of size 1 containing $s$.
+    \item We know that $|C[n]|+|C[s]|$ is the number of leaves in the tree rooted at the lowest common ancestor of any pair of leaves $i, j$ where $i \in C[n]$ and $j \in C[s]$ because the parent $p$ of $n$ and $s$ is the lowest common ancestor. Thus, we can add $(L-|C[n]|-|C[s]|)w(i, j)$ to our revenue, where $L$ is the total number of leaves and $w(i, j)$ is the similarity function between $i$ and $j$.
+    \begin{itemize}
+        \item We are guaranteed to only see each pair once because no leaf can appear in two disjoint subtrees.
+    \end{itemize}
+    \item Now, remove $C[n]$ and $C[s]$ from our list of clusters and add $C[p] = C[n] \cup C[s]$ to our list of clusters.
+    \item Repeat this process until we reach the root.
+    \begin{itemize}
+        \item A small amount of time can be saved before merging the children of the root because they will not contribute to the revenue. The total number of leaves $L$ is equal to the number of leaves rooted at the root, so we get $n-|T_{i,j}|=0$.
+    \end{itemize}
+\end{enumerate}
+The time complexity is the number of time it takes to iterate through every pair of nodes, so $\mathcal{O}(n^2).$
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{oup-authoring-template/doc/revenue.png}
+    \caption{Generated HC tree for sample from Gland Immune Atlas dataset.}
+    \label{fig:tree}
+\end{figure}
+
+\section {Evaluation} \label{sec:eval}
+In this section we present empirical results related to the local search algorithm. We use 4 datasets from the Tabula Sapiens corpus \cite{Quake2024.12.03.626516}, listed in Table \ref{table:datasets} with the number of cells in each dataset. We utilize the UMAP embeddings of the data. UMAP \cite{McInnes2018UMAPUM} is a dimension reduction technique that reduces the original data, which can contain thousands of genes for each cell, to a smaller number of embeddings. Here, we use dimension 2 such that each cell is represented as 2 numbers (x,y). We initially chose these 4 datasets as they vary in scale, however we used samples of 1000 cells in our testing due to limitations of local compute. Samples were taken consistently across runs.
+
+We compare our implementation of the local search algorithm (LS) using greedy search against an existing implementation of the average link algorithm (AL) \footnote{https://github.com/MajiidJafarii/Dasgupta-s-Cost-Function-And-Moseley-Wang-Revenue-Function/tree/main}. For each dataset, we record the revenue, where the local search revenue is averaged over 5 independent runs: on each run, we initialize the tree randomly by shuffling the input vectors, which generates a different complete binary tree where leaves have different initial siblings. To normalize revenue against data size, we divide it by $(n-2)\sum_{i<j}{}{w(i,j)}$.
+
+\begin{table}[t]
+\begin{center}
+\caption{Specification of data used in the experiment. \label{table:datasets}}%
+\begin{tabular}{@{}ll@{}}
+\toprule
+Dataset & Size\\
+\midrule
+Dendritic cells & 15063 \\
+Gland Immune Atlas & 6362  \\
+PBMC Other & 93541 \\
+SMBO-114 & 2410 \\
+\botrule
+\end{tabular}
+\end{center}
+\end{table}
+
+As shown in Table \ref{table:results1}, we observe that average link tends to do better on datasets of this scale, while average link struggles. Additionally, these means are considerably worse than the average revenue Jowhari was able to achieve on a smaller dataset.\cite{jowhari2024hierarchicalclusteringlocalsearch} This is likely because as the dataset grows, the effect of the gains from local interchanges on the total revenue decreases and can even cause the global revenue to decrease in some scenarios. Additionally, in many scenarios, the algorithm had to be halted either because it was cycling through a few interchanges and global revenues or making minimal progress. This is particularly visible when we examine the number of interchanges and the number of halts. For larger datasets, like the dendritic cells dataset and the SMBO-114, not only is the average number of interchanges higher, but the mean halting point is also much higher, as we can see in Table \ref{table:results1} and Table \ref{table:halts}. As the datasets increase in size, the algorithm is less likely to naturally  converge. Where Jowhari's greedy local search converged with an average of 2011 interchanges over all their datasets~\cite{jowhari2024hierarchicalclusteringlocalsearch}, the median number of interchanges for our data was 6500 , as shown in Figure \ref{fig:boxplot}.
+
+\begin{table}[t]
+\begin{center}
+\caption{Comparison of practical revenue from average link (AL) and greedy local search (LS) algorithms.   \label{table:results1}}%
+\begin{tabular}{@{}llll@{}}
+\toprule
+Dataset & AL & LS (Avg) & LS (\# Interchanges) \\
+\midrule
+Dendritic cells & 0.84 & 0.36 & 20941 \\
+Gland Immune Atlas & 0.91  & 0.37 & 4920 \\
+PBMC Other & 0.65 & 0.35 & 6000 \\
+SMBO-114 & 0.90  & 0.35 & 5109 \\
+\botrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{table}[t]
+\begin{center}
+\caption{Halts by dataset. \label{table:halts}}%
+\begin{tabular}{@{}lll@{}}
+\toprule
+Dataset & Number of LS Halts & Mean Halting Point \\
+\midrule
+Dendritic cells & 4 & 24250\\
+Gland Immune Atlas & 3  & 3333 \\
+PBMC Other & 4 & 6250 \\
+SMBO-114 & 4 & 4500 \\
+\botrule
+\end{tabular}
+\end{center}
+\end{table}
+
+\begin{figure}
+    \centering
+    \includegraphics[width=\linewidth]{oup-authoring-template/doc/boxplot.png}
+    \caption{Boxplot of interchanges}
+    \label{fig:boxplot}
+\end{figure}
+
+
+\section{Related Work}
+
+As discussed in Section \ref{sec:background}, our work is to make an open-source implementation of Jowhari's local search method for hierarchical clustering \cite{jowhari2024hierarchicalclusteringlocalsearch}. 
+
+We direct the reader to the survey paper by Mosely and Wang \cite{https://doi.org/10.1002/widm.53} for an overview of different hierarchical clustering algorithms and their theoretical guarantees. In particular, their work includes another local search algorithm, where local search is used in a divisive hierarchical clustering where the strategy determines which clusters are split. Unlike this algorithm, Jowhari employs local search in an agglomerative bottom-up method.
+
+The interchange tree operation has also been used by Kobren et al. and Monath et al \cite{10.1145/3097983.3098079, 10.1145/3292500.3330929} in incremental algorithms for hierarchical clustering, where the full set of data points is not available ahead of time (new data points are added and the clustering must be updated incrementally). 
+
+Average link is another agglomerative method that uses the average distance between all points from two clusters to decide which clusters to merge next \cite{10.5555/3648699.3648700}. In other words, for each pair of clusters, the average link algorithm computes the distance between the two clusters as the average distance between all the clusters' points. Then, the two clusters with the smallest average distance are merged.
+
+
+\section{Future work}
+\textit{Matching Jowhari's results.} We tested our implementation of Jowhari's algorithm on a different set of datasets. If our implementation also produces HS trees of lower revenues on the same datasets, then we must analyze which heuristics we used cause our method to be suboptimal.
+
+\textit{Convergence time}. As mentioned by Jowhari, the convergence time of the local search algorithm compared to other hierarchical clustering methods like average link is unknown. There may be some theoretical upper bound on the number of interchanges necessary to reach a locally optimal tree. Empirical testing, which depends on the initialization of the tree, is also crucial to understanding the practical comparison between methods.
+
+\textit{Combining HC methods}. The practical revenue of local search is dependent on the input tree. It is possible that doing some pre-processing, or combining local search with another method that initially builds an HC tree, can yield a more optimal  than using local search alone on random trees. It may also be productive to combine the local search method with agglomerative methods to optimize clusters of nodes before merging them into a tree.
+
+\section{Conclusion}
+In this project, we study Jowhari's agglomerative local search algorithm for hierarchical clustering.
+This method searches for local swaps of subtrees in the tree, known as interchanges, that increase the revenue of the tree.
+We implement Jowhari's local search method and compare it to the average link clustering algorithm. We demonstrate that our implementation produces trees with lower revenue than  average link, and analyze reasons why this occurred.
+
+
+\bibliographystyle{unsrtnat} 
+\bibliography{reference}
+
+\begin{appendices}
+
+\section{Datasets}
+Permanent download links from Tabula Sapiens:
+
+\noindent
+https://datasets.cellxgene.cziscience.com/c6ea3545-9200-4497-8591-08f687626182.h5ad
+\noindent
+https://datasets.cellxgene.cziscience.com/e9078993-a985-4159-b770-a0baf954d7f6.h5ad
+\noindent
+https://datasets.cellxgene.cziscience.com/982c7fb5-a191-4125-8ff5-edea84790468.h5ad
+\noindent
+https://datasets.cellxgene.cziscience.com/3b2878a8-4798-4ae0-b284-e77ed7c1b6a5.h5ad
+\end{appendices}
+
+\end{document}
